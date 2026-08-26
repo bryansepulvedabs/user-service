@@ -46,5 +46,9 @@ public class UserService {
         return userRepository.save(existentUser);
     }
 
+    public void deleteById(Long id){
+        UserEntity user = findById(id);
+        userRepository.deleteById(user.getId());
+    }
 
 }
