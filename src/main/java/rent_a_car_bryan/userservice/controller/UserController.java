@@ -20,6 +20,11 @@ public class UserController {
         return userService.findAll();
     }
 
+    @GetMapping("/{id}")
+    public UserEntity findById(@PathVariable Long id){
+        return userService.findById(id);
+    }
+
     @GetMapping("/rut/{rut}")
     public UserEntity findByRut(@PathVariable String rut){
         return userService.findByRut(rut);
@@ -29,6 +34,11 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserEntity create(@RequestBody UserEntity user){
         return userService.save(user);
+    }
+
+    @PutMapping("/{id}")
+    public UserEntity update(@PathVariable Long id, @RequestBody UserEntity user){
+        return userService.update(id,user);
     }
 
 }

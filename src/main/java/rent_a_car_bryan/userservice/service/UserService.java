@@ -31,5 +31,20 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public UserEntity update(Long id, UserEntity userUpdate){
+        UserEntity existentUser = findById(id);
+        existentUser.setRut(userUpdate.getRut());
+        existentUser.setFirstName(userUpdate.getFirstName());
+        existentUser.setLastName(userUpdate.getLastName());
+        existentUser.setPassword(userUpdate.getPassword());
+        existentUser.setEmail(userUpdate.getEmail());
+        existentUser.setPhone(userUpdate.getPhone());
+        existentUser.setAddress(userUpdate.getAddress());
+        existentUser.setCity(userUpdate.getCity());
+        existentUser.setCountry(userUpdate.getCountry());
+
+        return userRepository.save(existentUser);
+    }
+
 
 }
