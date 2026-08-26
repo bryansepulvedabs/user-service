@@ -6,11 +6,14 @@ import lombok.Data;
 @Entity
 @Table(name = "users")
 @Data
-public class userEntity {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(unique = true, nullable = false, length = 12)
+    private String rut;
 
     @Column(nullable = false)
     private String firstName;
@@ -35,6 +38,5 @@ public class userEntity {
 
     @Column(nullable = false)
     private String country;
-
 
 }
