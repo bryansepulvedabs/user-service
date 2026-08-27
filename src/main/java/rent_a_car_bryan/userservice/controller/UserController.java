@@ -36,7 +36,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponseDTO create(@RequestBody UserRequestDTO user){
         return userService.save(user);
-    }git
+    }
 
     @PutMapping("/{id}")
     public UserResponseDTO update(@PathVariable Long id, @RequestBody UserRequestDTO userUpdate){
