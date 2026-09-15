@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
 import rent_a_car_bryan.userservice.entity.UserEntity;
+import rent_a_car_bryan.userservice.exception.ResourceNotFoundException;
 import rent_a_car_bryan.userservice.repository.UserRepository;
 
 import java.util.List;
@@ -29,7 +30,7 @@ public class UserService {
 
     public UserResponseDTO findByRut(String rut){
         UserEntity user = userRepository.findByRut(rut)
-                .orElseThrow(() -> new RuntimeException( "Usuario no encontrado con rut : " + rut));
+                .orElseThrow(() -> new ResourceNotFoundException( "Usuario no encontrado con rut : " + rut));
         return toResponseDTO(user);
     }
 
@@ -64,7 +65,7 @@ public class UserService {
 
     private UserEntity findEntityById(Long id){
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException( "Usuario no encontrado con id : " + id));
+                .orElseThrow(() -> new ResourceNotFoundException( "Usuario no encontrado con id : " + id));
     }
 
     private UserEntity toEntity(UserRequestDTO dto){
