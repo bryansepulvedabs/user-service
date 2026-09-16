@@ -1,6 +1,7 @@
 package rent_a_car_bryan.userservice.dto;
 
 import lombok.Data;
+import rent_a_car_bryan.userservice.entity.EnumRole;
 
 @Data
 public class UserResponseDTO {
@@ -13,4 +14,5 @@ public class UserResponseDTO {
     private String address;
     private String city;
     private String country;
+    private EnumRole Role;
 }

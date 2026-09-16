@@ -39,4 +39,8 @@ public class UserEntity {
     @Column(nullable = false)
     private String country;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private EnumRole role;
+
 }

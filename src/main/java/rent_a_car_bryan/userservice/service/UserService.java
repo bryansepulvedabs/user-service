@@ -1,6 +1,7 @@
 package rent_a_car_bryan.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
@@ -15,6 +16,7 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public List<UserResponseDTO> findAll(){
         return userRepository.findAll()
@@ -36,6 +38,7 @@ public class UserService {
 
     public UserResponseDTO save(UserRequestDTO userRequestDTO){
         UserEntity user = toEntity(userRequestDTO);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         UserEntity savedUser = userRepository.save(user);
         return toResponseDTO(savedUser);
     }
