@@ -3,11 +3,15 @@ package rent_a_car_bryan.userservice.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import rent_a_car_bryan.userservice.dto.LoginRequestDTO;
+import rent_a_car_bryan.userservice.dto.LoginResponseDTO;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
 import rent_a_car_bryan.userservice.entity.UserEntity;
+import rent_a_car_bryan.userservice.exception.InvalidCredentialsException;
 import rent_a_car_bryan.userservice.exception.ResourceNotFoundException;
 import rent_a_car_bryan.userservice.repository.UserRepository;
+import rent_a_car_bryan.userservice.security.JwtService;
 
 import java.util.List;
 
@@ -17,9 +21,10 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public List<UserResponseDTO> findAll(){
-        return userRepository.findAll()
+        return userRepository.findAllByOrderByIdAsc()
                 .stream()
                 .map(this::toResponseDTO)
                 .toList();
@@ -50,11 +55,15 @@ public class UserService {
         user.setFirstName(userRequestDTO.getFirstName());
         user.setLastName(userRequestDTO.getLastName());
         user.setEmail(userRequestDTO.getEmail());
-        user.setPassword(userRequestDTO.getPassword());
+        // Solo se cambia la contraseña si viene una nueva; y siempre se hashea
+        if (userRequestDTO.getPassword() != null && !userRequestDTO.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        }
         user.setPhone(userRequestDTO.getPhone());
         user.setAddress(userRequestDTO.getAddress());
         user.setCity(userRequestDTO.getCity());
         user.setCountry(userRequestDTO.getCountry());
+        user.setRole(userRequestDTO.getRole());
 
         UserEntity updatedUser = userRepository.save(user);
         return toResponseDTO(updatedUser);
@@ -96,7 +105,26 @@ public class UserService {
         dto.setAddress(user.getAddress());
         dto.setCity(user.getCity());
         dto.setCountry(user.getCountry());
+        dto.setRole(user.getRole());
         return dto;
+    }
+
+    public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
+        UserEntity user = userRepository.findByEmail(loginRequestDTO.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("Correo o contraseña incorrectos"));
+
+        if (!passwordEncoder.matches(loginRequestDTO.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Correo o contraseña incorrectos");
+        }
+
+        LoginResponseDTO response = new LoginResponseDTO();
+        response.setToken(jwtService.generateToken(user));
+        response.setId(user.getId());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        return response;
     }
 
 }
