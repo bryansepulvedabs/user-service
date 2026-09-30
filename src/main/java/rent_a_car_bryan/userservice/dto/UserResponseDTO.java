@@ -15,4 +15,5 @@ public class UserResponseDTO {
     private String city;
     private String country;
     private EnumRole Role;
+    private Boolean deleted;
 }

@@ -32,6 +32,13 @@ public class UserController {
         return userService.findById(id);
     }
 
+    // Ficha incluyendo eliminados, para revisar su historial. ADMIN, o rental-service
+    // (rol SERVICE) al armar el historial de un arriendo: ver SecurityConfig.
+    @GetMapping("/admin/{id}")
+    public UserResponseDTO findByIdIncludingDeleted(@PathVariable Long id){
+        return userService.findByIdIncludingDeleted(id);
+    }
+
     @GetMapping("/rut/{rut}")
     public UserResponseDTO findByRut(@PathVariable String rut){
         return userService.findByRut(rut);

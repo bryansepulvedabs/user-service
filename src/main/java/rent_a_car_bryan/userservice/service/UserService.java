@@ -49,6 +49,14 @@ public class UserService {
         return toResponseDTO(user);
     }
 
+    // Ficha para el admin: incluye usuarios dados de baja, para revisar su historial.
+    // La respuesta trae deleted = true cuando corresponde.
+    public UserResponseDTO findByIdIncludingDeleted(Long id) {
+        UserEntity user = userRepository.findAnyById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id : " + id));
+        return toResponseDTO(user);
+    }
+
     public UserResponseDTO findByRut(String rut){
         UserEntity user = userRepository.findByRut(rut)
                 .orElseThrow(() -> new ResourceNotFoundException( "Usuario no encontrado con rut : " + rut));
@@ -99,8 +107,6 @@ public class UserService {
     // GlobalExceptionHandler.
     @Transactional
     public UserResponseDTO restore(Long id) {
-        // Se valida existencia con la query nativa para dar un 404 claro en vez de
-        // "restore ejecutado, 0 filas".
         UserEntity deleted = userRepository.findDeletedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Usuario no encontrado o no estaba dado de baja: " + id));
@@ -162,6 +168,7 @@ public class UserService {
         dto.setCity(user.getCity());
         dto.setCountry(user.getCountry());
         dto.setRole(user.getRole());
+        dto.setDeleted(Boolean.TRUE.equals(user.getDeleted()));
         return dto;
     }
 

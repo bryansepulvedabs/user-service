@@ -25,6 +25,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>{
     @Query(value = "SELECT * FROM users WHERE id = :id AND deleted = true", nativeQuery = true)
     Optional<UserEntity> findDeletedById(Long id);
 
+    // Ficha del admin: el usuario exista activo o dado de baja.
+    @Query(value = "SELECT * FROM users WHERE id = :id", nativeQuery = true)
+    Optional<UserEntity> findAnyById(Long id);
+
     // El UPDATE se hace por SQL: userRepository.save() no serviria, porque para
     // llamarlo antes hay que cargar la entidad, y las consultas JPA no la ven.
     @Modifying
