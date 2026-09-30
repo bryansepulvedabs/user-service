@@ -1,12 +1,17 @@
 package rent_a_car_bryan.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import rent_a_car_bryan.userservice.dto.LoginRequestDTO;
 import rent_a_car_bryan.userservice.dto.LoginResponseDTO;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
+import rent_a_car_bryan.userservice.entity.EnumRole;
 import rent_a_car_bryan.userservice.entity.UserEntity;
 import rent_a_car_bryan.userservice.exception.InvalidCredentialsException;
 import rent_a_car_bryan.userservice.exception.ResourceNotFoundException;
@@ -43,7 +48,8 @@ public class UserService {
 
     public UserResponseDTO save(UserRequestDTO userRequestDTO){
         UserEntity user = toEntity(userRequestDTO);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(resolveRoleForNewUser(userRequestDTO.getRole()));
+        user.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
         UserEntity savedUser = userRepository.save(user);
         return toResponseDTO(savedUser);
     }
@@ -63,7 +69,11 @@ public class UserService {
         user.setAddress(userRequestDTO.getAddress());
         user.setCity(userRequestDTO.getCity());
         user.setCountry(userRequestDTO.getCountry());
-        user.setRole(userRequestDTO.getRole());
+        // El rol es nullable = false: si el body no lo trae, se conserva el que ya tenía
+        // (el frontend manda a veces un UserResponseDTO parcial desde el selector de roles)
+        if (userRequestDTO.getRole() != null) {
+            user.setRole(userRequestDTO.getRole());
+        }
 
         UserEntity updatedUser = userRepository.save(user);
         return toResponseDTO(updatedUser);
@@ -74,6 +84,26 @@ public class UserService {
         userRepository.deleteById(user.getId());
     }
 
+    // POST /api/users es público (registro de cuenta nueva), así que el rol NO se puede
+    // tomar del body sin más: cualquiera mandaría "role": "ADMIN" y se haría administrador.
+    // Quien se registra desde fuera queda siempre como CLIENT; solo un ADMIN autenticado
+    // puede crear personal (ej. dar de alta a un empleado desde el backoffice).
+    private EnumRole resolveRoleForNewUser(EnumRole requestedRole) {
+        if (requestedRole == null || !isAdmin()) {
+            return EnumRole.CLIENT;
+        }
+        return requestedRole;
+    }
+
+    private boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN"));
+    }
 
     private UserEntity findEntityById(Long id){
         return userRepository.findById(id)
@@ -91,6 +121,7 @@ public class UserService {
         user.setAddress(dto.getAddress());
         user.setCity(dto.getCity());
         user.setCountry(dto.getCountry());
+        // El rol NO se copia acá a propósito: lo decide resolveRoleForNewUser() en save()
         return user;
     }
 
