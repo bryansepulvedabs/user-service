@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
-import rent_a_car_bryan.userservice.entity.UserEntity;
 import rent_a_car_bryan.userservice.service.UserService;
 
 import java.util.List;
@@ -20,6 +19,12 @@ public class UserController {
     @GetMapping
     public List<UserResponseDTO> findAll(){
         return userService.findAll();
+    }
+
+    // Usuarios dados de baja: solo ADMIN, ver SecurityConfig
+    @GetMapping("/deleted")
+    public List<UserResponseDTO> findAllDeleted(){
+        return userService.findAllDeleted();
     }
 
     @GetMapping("/{id}")
@@ -47,6 +52,12 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id){
         userService.deleteById(id);
+    }
+
+    // Reactivar un usuario dado de baja: solo ADMIN
+    @PatchMapping("/{id}/restore")
+    public UserResponseDTO restore(@PathVariable Long id){
+        return userService.restore(id);
     }
 
 }

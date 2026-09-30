@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import rent_a_car_bryan.userservice.dto.LoginRequestDTO;
 import rent_a_car_bryan.userservice.dto.LoginResponseDTO;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
@@ -30,6 +31,14 @@ public class UserService {
 
     public List<UserResponseDTO> findAll(){
         return userRepository.findAllByOrderByIdAsc()
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
+    // Usuarios dados de baja, para que el admin pueda reactivarlos
+    public List<UserResponseDTO> findAllDeleted() {
+        return userRepository.findAllDeleted()
                 .stream()
                 .map(this::toResponseDTO)
                 .toList();
@@ -82,6 +91,22 @@ public class UserService {
     public void deleteById(Long id){
         UserEntity user = findEntityById(id);
         userRepository.deleteById(user.getId());
+    }
+
+    // Reactivar un usuario dado de baja. El @Modifying necesita transaccion.
+    // Si el correo o el RUT fueron ocupados por alguien mas mientras estaba baja,
+    // el UPDATE choca con el indice unico y sale como 409 (Conflict), gracias al
+    // GlobalExceptionHandler.
+    @Transactional
+    public UserResponseDTO restore(Long id) {
+        // Se valida existencia con la query nativa para dar un 404 claro en vez de
+        // "restore ejecutado, 0 filas".
+        UserEntity deleted = userRepository.findDeletedById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Usuario no encontrado o no estaba dado de baja: " + id));
+        userRepository.restoreById(id);
+        deleted.setDeleted(false);
+        return toResponseDTO(deleted);
     }
 
     // POST /api/users es público (registro de cuenta nueva), así que el rol NO se puede
