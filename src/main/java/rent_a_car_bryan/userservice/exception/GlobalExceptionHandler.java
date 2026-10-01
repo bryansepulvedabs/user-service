@@ -3,61 +3,78 @@ package rent_a_car_bryan.userservice.exception;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import rent_a_car_bryan.userservice.dto.ErrorResponse;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Not Found",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return build(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 
     // Sin este handler, un login con contraseña incorrecta caía en handleGeneral y
     // devolvía 500 "Error interno del servidor" en vez de 401 con el motivo real.
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.UNAUTHORIZED.value(),
-                "Unauthorized",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        return build(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
     }
 
     // rut y email son unique: registrarse con uno repetido lanza esto desde JPA.
-    // Es el error mas comun del formulario de registro, asi que tiene que llegar
-    // como 409 con un mensaje que el usuario pueda entender, no como 500.
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
-                "Ya existe una cuenta con ese correo o RUT",
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return build(HttpStatus.CONFLICT, "Conflict", "Ya existe una cuenta con ese correo o RUT");
+    }
+
+    // Bean Validation: los mensajes ya estan escritos en los DTO, asi que se devuelven tal cual
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining(". "));
+        return build(HttpStatus.BAD_REQUEST, "Bad Request",
+                message.isBlank() ? "Los datos enviados no son válidos" : message);
+    }
+
+    // JSON mal formado, fecha con formato incorrecto, valor de enum que no existe...
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Bad Request", "El cuerpo de la solicitud no es válido");
+    }
+
+    // /api/users/abc en vez de un id numerico
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Bad Request",
+                "El valor del parámetro '" + ex.getName() + "' no es válido");
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Bad Request",
+                "Falta el parámetro '" + ex.getParameterName() + "'");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal Server Error",
-                "Error interno del servidor",
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Error interno del servidor");
+    }
+
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String error, String message) {
+        ErrorResponse body = new ErrorResponse(status.value(), error, message, LocalDateTime.now());
+        return ResponseEntity.status(status).body(body);
     }
 }

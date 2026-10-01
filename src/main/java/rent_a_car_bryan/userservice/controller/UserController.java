@@ -1,8 +1,11 @@
 package rent_a_car_bryan.userservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import rent_a_car_bryan.userservice.dto.OnCreate;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
 import rent_a_car_bryan.userservice.service.UserService;
@@ -46,12 +49,12 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponseDTO create(@RequestBody UserRequestDTO user){
+    public UserResponseDTO create(@Validated(OnCreate.class) @RequestBody UserRequestDTO user){
         return userService.save(user);
     }
 
     @PutMapping("/{id}")
-    public UserResponseDTO update(@PathVariable Long id, @RequestBody UserRequestDTO userUpdate){
+    public UserResponseDTO update(@PathVariable Long id, @Valid @RequestBody UserRequestDTO userUpdate){
         return userService.update(id,userUpdate);
     }
 
