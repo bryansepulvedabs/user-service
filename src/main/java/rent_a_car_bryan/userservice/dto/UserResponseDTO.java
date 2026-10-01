@@ -14,6 +14,6 @@ public class UserResponseDTO {
     private String address;
     private String city;
     private String country;
-    private EnumRole Role;
+    private EnumRole role;
     private Boolean deleted;
 }
