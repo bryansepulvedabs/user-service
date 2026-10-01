@@ -8,13 +8,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rent_a_car_bryan.userservice.dto.ChangePasswordRequestDTO;
 import rent_a_car_bryan.userservice.dto.LoginRequestDTO;
 import rent_a_car_bryan.userservice.dto.LoginResponseDTO;
+import rent_a_car_bryan.userservice.dto.ProfileUpdateRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
 import rent_a_car_bryan.userservice.entity.EnumRole;
 import rent_a_car_bryan.userservice.entity.UserEntity;
 import rent_a_car_bryan.userservice.exception.InvalidCredentialsException;
+import rent_a_car_bryan.userservice.exception.InvalidRequestException;
 import rent_a_car_bryan.userservice.exception.ResourceNotFoundException;
 import rent_a_car_bryan.userservice.repository.UserRepository;
 import rent_a_car_bryan.userservice.security.JwtService;
@@ -113,6 +116,47 @@ public class UserService {
         userRepository.restoreById(id);
         deleted.setDeleted(false);
         return toResponseDTO(deleted);
+    }
+
+    // ---- Cuenta propia ("Mi perfil") ----
+    // El usuario sale SIEMPRE del token (el subject del JWT es el id), nunca del body ni de la
+    // URL: asi nadie puede leer ni editar la cuenta de otro por estas rutas.
+
+    public UserResponseDTO findMe() {
+        return toResponseDTO(findEntityById(currentUserId()));
+    }
+
+    // Solo los datos de contacto. RUT y rol no se tocan desde aca.
+    public UserResponseDTO updateMe(ProfileUpdateRequestDTO dto) {
+        UserEntity user = findEntityById(currentUserId());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+        user.setAddress(dto.getAddress());
+        user.setCity(dto.getCity());
+        user.setCountry(dto.getCountry());
+        return toResponseDTO(userRepository.save(user));
+    }
+
+    public void changePassword(ChangePasswordRequestDTO dto) {
+        UserEntity user = findEntityById(currentUserId());
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            throw new InvalidRequestException("La contraseña actual no es correcta");
+        }
+        if (passwordEncoder.matches(dto.getNewPassword(), user.getPassword())) {
+            throw new InvalidRequestException("La nueva contraseña debe ser distinta de la actual");
+        }
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    private Long currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            throw new InvalidCredentialsException("Debes iniciar sesión");
+        }
+        return Long.valueOf(auth.getName());
     }
 
     // POST /api/users es público (registro de cuenta nueva), así que el rol NO se puede

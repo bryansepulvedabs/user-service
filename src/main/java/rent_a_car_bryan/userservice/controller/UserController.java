@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import rent_a_car_bryan.userservice.dto.ChangePasswordRequestDTO;
 import rent_a_car_bryan.userservice.dto.OnCreate;
+import rent_a_car_bryan.userservice.dto.ProfileUpdateRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserRequestDTO;
 import rent_a_car_bryan.userservice.dto.UserResponseDTO;
 import rent_a_car_bryan.userservice.service.UserService;
@@ -28,6 +30,23 @@ public class UserController {
     @GetMapping("/deleted")
     public List<UserResponseDTO> findAllDeleted(){
         return userService.findAllDeleted();
+    }
+
+    // ---- Cuenta propia: cualquier usuario con sesion (ver SecurityConfig) ----
+    @GetMapping("/me")
+    public UserResponseDTO me(){
+        return userService.findMe();
+    }
+
+    @PutMapping("/me")
+    public UserResponseDTO updateMe(@Valid @RequestBody ProfileUpdateRequestDTO dto){
+        return userService.updateMe(dto);
+    }
+
+    @PutMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@Valid @RequestBody ChangePasswordRequestDTO dto){
+        userService.changePassword(dto);
     }
 
     @GetMapping("/{id}")

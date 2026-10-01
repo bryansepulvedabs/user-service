@@ -35,6 +35,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Login y registro de cuenta nueva: públicos
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/users").permitAll()
+                        // Cuenta propia ("Mi perfil"): cualquier usuario con sesion, sea cual sea su rol.
+                        // Tiene que ir ANTES de /api/users/*, que tambien cubriria "/me" y lo dejaria
+                        // solo para ADMIN y SERVICE (un cliente recibiria 403 en su propio perfil).
+                        .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
                         // Lista de usuarios eliminados: solo ADMIN. Tiene que ir ANTES de /api/users/*,
                         // que tambien la cubriria y dejaria entrar al rol SERVICE.
                         .requestMatchers(HttpMethod.GET, "/api/users/deleted").hasRole("ADMIN")
